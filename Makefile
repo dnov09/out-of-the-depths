@@ -44,10 +44,6 @@ run-bl: bootloader.bin
 dump_lowkern: lowkern.bin
 	@objdump -D -m i386 lowkern.bin
 
-test: bootloader.bin
-	@tests/runtests
-
-
 handin: handin-check
 	@echo "Handing in with git (this may ask for your GitHub username/password)..."
 	@git push

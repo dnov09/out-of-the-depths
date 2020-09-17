@@ -171,20 +171,21 @@ to send this through our assembler and linker first (using the GNU `as` assemble
 to generate a fake disk image with our code in the first 512 bytes:
 
 ```Shell
-[you@fusion] as --32 -o bootloader.o bootloader.S
-[you@fusion] ld -m elf_i386 -Ttext 0x7c00 --oformat binary -o bootloader.bin bootloader.o
+[root@container] as --32 -o bootloader.o bootloader.S
+[root@container] ld -m elf_i386 -Ttext 0x7c00 --oformat binary -o bootloader.bin bootloader.o
 ```
 
 We can then boot using QEMU with our disk image:
 
 ```Shell
-[you@fusion] qemu-system-i386 -nographic -drive file=bootloader.bin,index=0,media=disk,format=raw
+[root@container] qemu-system-i386 -nographic -drive file=bootloader.bin,index=0,media=disk,format=raw
 ```
 
 You can also carry out these steps by using the `Makefile`, specifically by using
 `make bootloader.bin` and `make run-bl`, respectively.
 
-If everything went right, you should see your string printed to the console. 
+If everything went right, you should see your string printed to the console. By the way,
+you can exit the QEMU console by running <code>ctrl-a</code> followed by <code>x</code>.
 
 You're done with the first part; congratulations on your first bootloader! Now if
 this were a real bootloader, we'd have to have some code that read either a
@@ -362,8 +363,8 @@ tell the linker to lay out the code segment after that.
 We should now be able to build our little 32-bit assembly kernel:
 
 ```Shell
-[you@fusion] gcc -ffreestanding -nostdlib -m32 -o lowkern.o -c lowkern.S
-[you@fusion] ld -T kernel.ld -m elf_i386 -o lowkern.bin lowkern.o
+[root@container] gcc -ffreestanding -nostdlib -m32 -o lowkern.o -c lowkern.S
+[root@container] ld -T kernel.ld -m elf_i386 -o lowkern.bin lowkern.o
 ```
 
 The `-ffreestanding` and `-nostdlib` flags tell the compiler that it 
@@ -378,25 +379,33 @@ You can verify that our special boot section
 has been created by running:
 
 ```Shell
-[you@fusion] readelf -SW lowkern.bin
+[root@container] readelf -SW lowkern.bin
 ```
 
 We can't boot this binary directly, however. We need to generate a little 
 root filesystem that GRUB can load the kernel from. Luckily, GRUB includes
 a utility to do just that, called `grub-mkrescue`. You don't need to invoke it 
 directly. You can just run `make iso`. This should create an ISO CD-ROM
-image called `p2kern.iso` which we can use to boot:
+image called `p2kern.iso` which we can use to boot. Note that we need to run QEMU in a way
+that we can see the fake VGA screen. Normally we'd just run qemu like this:
 
 ```Shell
-[you@fusion] qemu-system-i386 -cdrom p2kern.iso
+[root@container] qemu-system-i386 -cdrom p2kern.iso
+```
+
+But since we're running in a container, we don't have a window system (so QEMU can't
+create a virtual screen). We can get it to display the VGA framebuffer on the terminal
+using the "curses" console istead like so:
+
+```Shell
+[root@container] qemu-system-i386 -cdrom p2kern.iso -curses
 ```
 
 This will boot up a virtual machine, and you'll see a menu to boot
 your asm kernel or another kernel (which we'll build in the next part). Select
 the first, and if everything went well, you should see "OK" printed to
-the screen. Note that if you're running QEMU with the `-nographic` flag, you
-won't see this, so you'll want to ssh to fusion using X forwarding (with
-the `-X` flag) so you can see a QEMU window. 
+the screen. To exit the curses console, you can type <code>alt+2</code> or
+<code>option+2</code> then type <code>quit</code> at the QEMU monitor console.
 
 That's it for this part; congrats on your first kernel!
 
@@ -405,21 +414,21 @@ That's it for this part; congrats on your first kernel!
 Since we're lazy and spoiled by high-level languages (think of the UNIX team writing
 the entire OS in assembly!), we want to get to the point where we can
 start writing our kernel in C code. To do that, we're going to have
-to get the environment set up for it. Namely, we're going to have to
+to get the environment that the C language (in particular the C runtime system) expects set up for it. Namely, we're going to have to
 make use of that stack we setup in our linker script before. This time
 I'm not giving you the code, but I'll give you some hints:
 
 * There are two files you need to fill in, `boot.S` and `kernel.c`
 * `boot.S` is going to look a lot like `lowkern.S`, but it needs
 to jump to a C function at some point
-* In your `boot.S` you're going to have to set up the stack putting
+* In your `boot.S` file you're going to have to set up the stack putting
 a pointer to the stack we reserved in the stack pointer register (`%esp`)
 * Your C kernel should be implemented in `kernel.c` and should do _the same
 thing_ as `lowkern.S` did (with the framebuffer and printing to the screen)
 but in C. It should then go into an infinite halt loop and never return.
 * You'll need the `call` instruction to get into C code.
 * Once you've finished writing the code, you'll want to use the `make ckern.bin`
-command and `make iso` again
+command and `make iso` again.
 
 To run this kernel, you should be able to run the same QEMU command as in
 the last part, only this time you'll select the second option in the GRUB
