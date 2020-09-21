@@ -13,7 +13,7 @@ three parts:
 # Getting Started
 
 Before you begin, you will want to read my article on the boot
-sequence [here](http://cs.iit.edu/~khale/class/intro-os/boot/boot.html).
+sequence [here](https://hale-legacy.com/class/intro-os/boot/boot.html).
 
 For this project you'll be writing some x86 32-bit assembly code. 
 In particular, you'll be using AT&T syntax (not Intel syntax). If you're
