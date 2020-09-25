@@ -20,10 +20,7 @@ hdr_end:
 
 .globl kernel_entry
 kernel_entry:
-	movb $'O',  0xb8000
-	movb $0x0f, 0xb8001
-	movb $'K',  0xb8002
-	movb $0x0f, 0xb8003
+	call main
 
 end:
 	hlt
