@@ -5,7 +5,5 @@ void main(void)
     char *addr = (char *)ADDRESS;
     addr[0] = 'O';
     addr[1] = 'K';
-    while (1){};
-
     return;
 }
